@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Events</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 24px;
+      font-family: Arial, sans-serif;
+      color: #202124;
+      background:
+        linear-gradient(rgba(0, 0, 0, .6), rgba(0, 0, 0, .75)),
+        url("/images/garage-background.jpg") center / cover fixed;
+    }
+    .page {
+      width: min(1100px, 100%);
+      margin: 0 auto;
+      overflow: hidden;
+      border-radius: 12px;
+      background: #fff;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, .28);
+    }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 20px 24px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    h1 { margin: 0; font-size: 26px; }
+    .meta { margin: 6px 0 0; color: #6b7280; font-size: 14px; }
+    .actions { display: flex; align-items: center; gap: 8px; }
+    .actions form { margin: 0; }
+    .button {
+      display: inline-block;
+      min-height: 40px;
+      padding: 10px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #fff;
+      color: #1f2937;
+      font: bold 14px Arial, sans-serif;
+      text-decoration: none;
+      cursor: pointer;
+    }
+    main { padding: 24px; }
+    .summary {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      color: #4b5563;
+      font-size: 14px;
+    }
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    th, td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f8fafc;
+      color: #475569;
+      font-size: 12px;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #f8fbff; }
+    .col-date { width: 190px; }
+    .col-user { width: 150px; }
+    .col-type { width: 120px; }
+    .message { overflow-wrap: anywhere; }
+    .empty {
+      padding: 48px 20px;
+      color: #6b7280;
+      text-align: center;
+    }
+    footer {
+      padding: 16px 24px;
+      border-top: 1px solid #e5e7eb;
+      color: #6b7280;
+      font-size: 13px;
+      text-align: center;
+    }
+    @media (max-width: 700px) {
+      body { padding: 12px; }
+      header { align-items: stretch; flex-direction: column; padding: 18px; }
+      .actions { display: grid; grid-template-columns: 1fr 1fr; }
+      .button { width: 100%; text-align: center; }
+      main { padding: 16px; }
+      table, tbody, tr, td { display: block; width: 100%; }
+      thead { display: none; }
+      tr { padding: 10px 14px; border-bottom: 1px solid #e5e7eb; }
+      tbody tr:last-child { border-bottom: 0; }
+      td {
+        display: grid;
+        grid-template-columns: 86px 1fr;
+        gap: 8px;
+        padding: 5px 0;
+        border: 0;
+      }
+      td::before {
+        content: attr(data-label);
+        color: #64748b;
+        font-size: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div>
+      <h1>Event history</h1>
+      <p class="meta">
+        <span th:text="${applicationName}">Gate Controller</span>
+        · v<span th:text="${applicationVersion}">0.1.0</span>
+        · Signed in as <strong th:text="${username}">username</strong>
+      </p>
+    </div>
+    <nav class="actions" aria-label="Application">
+      <a class="button" th:href="@{/button}">Gate</a>
+      <form th:action="@{/logout}" method="post">
+        <button class="button" type="submit">Logout</button>
+      </form>
+    </nav>
+  </header>
+
+  <main>
+    <div class="summary">
+      <span>Newest events first</span>
+      <strong th:text="${#lists.size(events)} + ' event(s)'">0 event(s)</strong>
+    </div>
+
+    <div class="table-wrap" th:if="${!#lists.isEmpty(events)}">
+      <table>
+        <thead>
+        <tr>
+          <th class="col-date">Date and time</th>
+          <th class="col-user">User</th>
+          <th class="col-type">Type</th>
+          <th>Message</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="event : ${events}">
+          <td data-label="Date"
+              th:text="${event.dateTime != null ? #temporals.format(event.dateTime, 'yyyy-MM-dd HH:mm:ss') : '—'}">
+            2026-01-01 12:00:00
+          </td>
+          <td data-label="User" th:text="${event.username}">username</td>
+          <td data-label="Type" th:text="${event.type}">button</td>
+          <td data-label="Message" class="message" th:text="${event.message}">Event message</td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="empty" th:if="${#lists.isEmpty(events)}">
+      No events have been recorded yet.
+    </div>
+  </main>
+
+  <footer>
+    <span th:text="${#dates.year(#dates.createNow())}">2026</span>
+    <span th:text="${applicationName}">Gate Controller</span>
+  </footer>
+</div>
+</body>
+</html>

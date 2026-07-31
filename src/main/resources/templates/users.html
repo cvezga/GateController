@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title th:text="${pageTitle} ?: 'User Management'">
+    User Management
+  </title>
+  <meta name="_csrf"
+        th:if="${_csrf != null}"
+        th:content="${_csrf.token}">
+  <meta name="_csrf_header"
+        th:if="${_csrf != null}"
+        th:content="${_csrf.headerName}">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --page: #f4f7f9;
+      --panel: #ffffff;
+      --panel-soft: #eef6f2;
+      --border: #d8e0e5;
+      --text: #17212b;
+      --muted: #5d6b76;
+      --primary: #1f6feb;
+      --primary-dark: #174ea6;
+      --danger: #b42318;
+      --danger-soft: #fff0ed;
+      --success: #17663a;
+      --success-soft: #e9f8ef;
+      --warning: #7a4c00;
+      --warning-soft: #fff4d8;
+      --shadow: 0 12px 30px rgba(23, 33, 43, 0.08);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--page);
+      color: var(--text);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .app-shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 40px;
+    }
+
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .title-group {
+      min-width: 0;
+    }
+
+    .eyebrow {
+      margin: 0 0 6px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      line-height: 1.15;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) 160px;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: #fbfcfd;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 42px;
+      padding: 9px 11px;
+      border: 1px solid #c8d2d9;
+      border-radius: 7px;
+      background: #ffffff;
+      color: var(--text);
+      outline: none;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(31, 111, 235, 0.14);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+
+    th,
+    td {
+      padding: 13px 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0;
+      background: #f7fafb;
+    }
+
+    td {
+      font-size: 14px;
+    }
+
+    tbody tr:hover {
+      background: #f8fbfd;
+    }
+
+    .user-name {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 150px;
+    }
+
+    .user-name strong {
+      font-size: 14px;
+    }
+
+    .user-name span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .role-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 4px 9px;
+      border-radius: 999px;
+      background: var(--panel-soft);
+      color: #15513a;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .row-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      min-width: 156px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 40px;
+      padding: 9px 13px;
+      border-radius: 7px;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1;
+      white-space: nowrap;
+      transition: background-color 140ms ease, color 140ms ease, border-color 140ms ease;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .btn-secondary {
+      border: 1px solid #c8d2d9;
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      border-color: #9aaab5;
+      background: #f5f8fa;
+    }
+
+    .btn-danger {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .btn-danger:hover {
+      background: #ffdcd6;
+    }
+
+    .icon {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+    }
+
+    .form-panel form {
+      display: grid;
+      gap: 13px;
+      padding: 16px;
+    }
+
+    .name-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .form-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding-top: 4px;
+    }
+
+    .status {
+      display: none;
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .status.is-visible {
+      display: block;
+    }
+
+    .status.success {
+      border-color: #a8dec0;
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    .status.error {
+      border-color: #ffc0b6;
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+
+    .status.info {
+      border-color: #ead291;
+      background: var(--warning-soft);
+      color: var(--warning);
+    }
+
+    .empty-state {
+      display: none;
+      padding: 34px 18px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-state.is-visible {
+      display: block;
+    }
+
+    .empty-state strong {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--text);
+      font-size: 16px;
+    }
+
+    .count {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .form-panel {
+        order: -1;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app-shell {
+        width: min(100% - 20px, 1180px);
+        padding-top: 16px;
+      }
+
+      .page-header,
+      .panel-header {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .header-actions {
+        justify-content: stretch;
+      }
+
+      .header-actions .btn,
+      .form-actions .btn {
+        width: 100%;
+      }
+
+      .toolbar,
+      .name-grid,
+      .form-actions {
+        grid-template-columns: 1fr;
+      }
+
+      h1 {
+        font-size: 25px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="app-shell">
+  <header class="page-header">
+    <div class="title-group">
+      <p class="eyebrow">
+        <span th:text="${applicationName} ?: 'Gate Controller'">Gate Controller</span>
+        <span aria-hidden="true"> · </span>
+        <span th:text="'v' + ${applicationVersion}">v0.1.0</span>
+      </p>
+      <h1>User Management</h1>
+    </div>
+
+    <div class="header-actions">
+      <form class="logout-form"
+            th:action="@{/logout}"
+            method="post">
+        <input type="hidden"
+               th:if="${_csrf != null}"
+               th:name="${_csrf.parameterName}"
+               th:value="${_csrf.token}">
+        <button class="btn btn-secondary"
+                type="submit">
+          Logout
+        </button>
+      </form>
+      <button class="btn btn-secondary"
+              type="button"
+              id="refreshButton">
+        <svg class="icon"
+             viewBox="0 0 24 24"
+             aria-hidden="true">
+          <path d="M20 11a8 8 0 1 0-2.34 5.66"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+          <path d="M20 4v7h-7"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"></path>
+        </svg>
+        Refresh
+      </button>
+      <button class="btn btn-primary"
+              type="button"
+              id="newUserButton">
+        <svg class="icon"
+             viewBox="0 0 24 24"
+             aria-hidden="true">
+          <path d="M12 5v14M5 12h14"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"></path>
+        </svg>
+        New user
+      </button>
+    </div>
+  </header>
+
+  <div id="status"
+       class="status"
+       role="status"
+       aria-live="polite"></div>
+
+  <main class="layout">
+    <section class="panel">
+      <div class="panel-header">
+        <h2>Users</h2>
+        <span class="count"
+              id="userCount">0 users</span>
+      </div>
+
+      <div class="toolbar">
+        <div class="field">
+          <label for="searchInput">Search</label>
+          <input id="searchInput"
+                 type="search"
+                 autocomplete="off"
+                 placeholder="Name, username, or email">
+        </div>
+
+        <div class="field">
+          <label for="roleFilter">Role</label>
+          <select id="roleFilter">
+            <option value="">All roles</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="empty-state"
+           id="emptyState">
+        <strong>No users found</strong>
+        <span>Create a user or adjust the filters.</span>
+      </div>
+
+      <div class="table-wrap"
+           id="tableWrap">
+        <table>
+          <thead>
+          <tr>
+            <th scope="col">User</th>
+            <th scope="col">Email</th>
+            <th scope="col">Role</th>
+            <th scope="col">Password</th>
+            <th scope="col">
+              <span class="sr-only">Actions</span>
+            </th>
+          </tr>
+          </thead>
+          <tbody id="userTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel form-panel"
+             aria-labelledby="formTitle">
+      <div class="panel-header">
+        <h2 id="formTitle">Create User</h2>
+      </div>
+
+      <form id="userForm">
+        <input id="userId"
+               type="hidden">
+
+        <div class="field">
+          <label for="username">Username</label>
+          <input id="username"
+                 name="username"
+                 type="text"
+                 autocomplete="username"
+                 required>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password"
+                 name="password"
+                 type="password"
+                 autocomplete="new-password"
+                 required>
+        </div>
+
+        <div class="field">
+          <label for="email">Email</label>
+          <input id="email"
+                 name="email"
+                 type="email"
+                 autocomplete="email"
+                 required>
+        </div>
+
+        <div class="name-grid">
+          <div class="field">
+            <label for="firstName">First name</label>
+            <input id="firstName"
+                   name="firstName"
+                   type="text"
+                   autocomplete="given-name">
+          </div>
+
+          <div class="field">
+            <label for="lastName">Last name</label>
+            <input id="lastName"
+                   name="lastName"
+                   type="text"
+                   autocomplete="family-name">
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="role">Role</label>
+          <select id="role"
+                  name="role"
+                  required>
+            <option value="USER">USER</option>
+            <option value="ADMIN">ADMIN</option>
+            <option value="OPERATOR">OPERATOR</option>
+          </select>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary"
+                  type="submit"
+                  id="saveButton">
+            <svg class="icon"
+                 viewBox="0 0 24 24"
+                 aria-hidden="true">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"></path>
+              <path d="M17 21v-8H7v8M7 3v5h8"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linejoin="round"></path>
+            </svg>
+            <span id="saveButtonText">Save</span>
+          </button>
+
+          <button class="btn btn-secondary"
+                  type="button"
+                  id="cancelButton">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </section>
+  </main>
+</div>
+
+<script>
+  const apiUrl = '/api/users';
+  const csrfToken = document.querySelector('meta[name="_csrf"]')?.content;
+  const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.content;
+  const state = {
+    users: [],
+    filteredUsers: [],
+    editingId: null
+  };
+
+  const elements = {
+    status: document.getElementById('status'),
+    userCount: document.getElementById('userCount'),
+    tableBody: document.getElementById('userTableBody'),
+    tableWrap: document.getElementById('tableWrap'),
+    emptyState: document.getElementById('emptyState'),
+    form: document.getElementById('userForm'),
+    formTitle: document.getElementById('formTitle'),
+    userId: document.getElementById('userId'),
+    username: document.getElementById('username'),
+    password: document.getElementById('password'),
+    email: document.getElementById('email'),
+    firstName: document.getElementById('firstName'),
+    lastName: document.getElementById('lastName'),
+    role: document.getElementById('role'),
+    searchInput: document.getElementById('searchInput'),
+    roleFilter: document.getElementById('roleFilter'),
+    refreshButton: document.getElementById('refreshButton'),
+    newUserButton: document.getElementById('newUserButton'),
+    saveButton: document.getElementById('saveButton'),
+    saveButtonText: document.getElementById('saveButtonText'),
+    cancelButton: document.getElementById('cancelButton')
+  };
+
+  function setStatus(message, type = 'info') {
+    elements.status.textContent = message;
+    elements.status.className = `status is-visible ${type}`;
+  }
+
+  function clearStatus() {
+    elements.status.textContent = '';
+    elements.status.className = 'status';
+  }
+
+  function getFullName(user) {
+    return [user.firstName, user.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+  }
+
+  function normalize(value) {
+    return String(value || '').toLowerCase();
+  }
+
+  function sortUsers(users) {
+    return [...users].sort((left, right) =>
+      normalize(left.username).localeCompare(normalize(right.username))
+    );
+  }
+
+  function applyFilters() {
+    const search = normalize(elements.searchInput.value);
+    const role = elements.roleFilter.value;
+
+    state.filteredUsers = sortUsers(state.users).filter((user) => {
+      const searchable = [
+        user.username,
+        user.email,
+        user.firstName,
+        user.lastName,
+        getFullName(user)
+      ].map(normalize).join(' ');
+
+      const matchesSearch = !search || searchable.includes(search);
+      const matchesRole = !role || user.role === role;
+
+      return matchesSearch && matchesRole;
+    });
+
+    renderUsers();
+  }
+
+  function renderRoleOptions() {
+    const roles = [...new Set(state.users.map((user) => user.role).filter(Boolean))]
+      .sort();
+    const current = elements.roleFilter.value;
+
+    elements.roleFilter.innerHTML = '<option value="">All roles</option>';
+
+    roles.forEach((role) => {
+      const option = document.createElement('option');
+      option.value = role;
+      option.textContent = role;
+      elements.roleFilter.appendChild(option);
+    });
+
+    elements.roleFilter.value = roles.includes(current) ? current : '';
+  }
+
+  function renderUsers() {
+    elements.tableBody.innerHTML = '';
+
+    state.filteredUsers.forEach((user) => {
+      const row = document.createElement('tr');
+      const fullName = getFullName(user) || 'No name';
+
+      row.innerHTML = `
+        <td>
+          <div class="user-name">
+            <strong></strong>
+            <span></span>
+          </div>
+        </td>
+        <td></td>
+        <td><span class="role-pill"></span></td>
+        <td>Hidden</td>
+        <td>
+          <div class="row-actions">
+            <button class="btn btn-secondary" type="button" data-action="edit">Edit</button>
+            <button class="btn btn-danger" type="button" data-action="delete">Delete</button>
+          </div>
+        </td>
+      `;
+
+      row.querySelector('strong').textContent = fullName;
+      row.querySelector('.user-name span').textContent = `@${user.username || ''}`;
+      row.children[1].textContent = user.email || '';
+      row.querySelector('.role-pill').textContent = user.role || 'USER';
+      row.querySelector('[data-action="edit"]').addEventListener('click', () => editUser(user));
+      row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteUser(user));
+
+      elements.tableBody.appendChild(row);
+    });
+
+    const visibleCount = state.filteredUsers.length;
+    const totalCount = state.users.length;
+    elements.userCount.textContent = totalCount === visibleCount
+      ? `${totalCount} ${totalCount === 1 ? 'user' : 'users'}`
+      : `${visibleCount} of ${totalCount} users`;
+
+    const hasRows = visibleCount > 0;
+    elements.emptyState.classList.toggle('is-visible', !hasRows);
+    elements.tableWrap.style.display = hasRows ? 'block' : 'none';
+  }
+
+  function getPayload() {
+    return {
+      username: elements.username.value.trim(),
+      password: elements.password.value,
+      email: elements.email.value.trim(),
+      firstName: elements.firstName.value.trim(),
+      lastName: elements.lastName.value.trim(),
+      role: elements.role.value
+    };
+  }
+
+  function resetForm() {
+    state.editingId = null;
+    elements.form.reset();
+    elements.userId.value = '';
+    elements.role.value = 'USER';
+    elements.formTitle.textContent = 'Create User';
+    elements.saveButtonText.textContent = 'Save';
+    elements.username.focus();
+  }
+
+  function editUser(user) {
+    state.editingId = user.id;
+    elements.userId.value = user.id;
+    elements.username.value = user.username || '';
+    elements.password.value = '';
+    elements.email.value = user.email || '';
+    elements.firstName.value = user.firstName || '';
+    elements.lastName.value = user.lastName || '';
+    elements.role.value = user.role || 'USER';
+    elements.formTitle.textContent = 'Edit User';
+    elements.saveButtonText.textContent = 'Update';
+    clearStatus();
+    elements.username.focus();
+  }
+
+  async function requestJson(url, options = {}) {
+    const headers = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      ...(options.headers || {})
+    };
+
+    if (csrfToken && csrfHeader) {
+      headers[csrfHeader] = csrfToken;
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers
+    });
+
+    const responseText = await response.text();
+
+    if (!response.ok) {
+      let message = `Request failed with status ${response.status}`;
+
+      if (responseText) {
+        try {
+          const error = JSON.parse(responseText);
+          message = error.message || message;
+        } catch (ignored) {
+          message = responseText;
+        }
+      }
+
+      throw new Error(message);
+    }
+
+    if (response.status === 204 || !responseText) {
+      return null;
+    }
+
+    return JSON.parse(responseText);
+  }
+
+  async function loadUsers() {
+    elements.refreshButton.disabled = true;
+    setStatus('Loading users...', 'info');
+
+    try {
+      state.users = await requestJson(apiUrl);
+      renderRoleOptions();
+      applyFilters();
+      clearStatus();
+    } catch (error) {
+      setStatus(error.message, 'error');
+    } finally {
+      elements.refreshButton.disabled = false;
+    }
+  }
+
+  async function saveUser(event) {
+    event.preventDefault();
+
+    if (!elements.form.reportValidity()) {
+      return;
+    }
+
+    const isEditing = Boolean(state.editingId);
+    const url = isEditing ? `${apiUrl}/${state.editingId}` : apiUrl;
+    const method = isEditing ? 'PUT' : 'POST';
+
+    elements.saveButton.disabled = true;
+
+    try {
+      await requestJson(url, {
+        method,
+        body: JSON.stringify(getPayload())
+      });
+
+      resetForm();
+      await loadUsers();
+      setStatus(isEditing ? 'User updated.' : 'User created.', 'success');
+    } catch (error) {
+      setStatus(error.message, 'error');
+    } finally {
+      elements.saveButton.disabled = false;
+    }
+  }
+
+  async function deleteUser(user) {
+    const label = user.username || `user ${user.id}`;
+
+    if (!window.confirm(`Delete ${label}?`)) {
+      return;
+    }
+
+    try {
+      await requestJson(`${apiUrl}/${user.id}`, {
+        method: 'DELETE'
+      });
+
+      if (state.editingId === user.id) {
+        resetForm();
+      }
+
+      await loadUsers();
+      setStatus('User deleted.', 'success');
+    } catch (error) {
+      setStatus(error.message, 'error');
+    }
+  }
+
+  elements.form.addEventListener('submit', saveUser);
+  elements.cancelButton.addEventListener('click', resetForm);
+  elements.newUserButton.addEventListener('click', resetForm);
+  elements.refreshButton.addEventListener('click', loadUsers);
+  elements.searchInput.addEventListener('input', applyFilters);
+  elements.roleFilter.addEventListener('change', applyFilters);
+
+  loadUsers();
+</script>
+</body>
+</html>

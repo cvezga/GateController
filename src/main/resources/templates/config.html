@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${pageTitle}">Configuration</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 24px;
+      color: #172033;
+      background: #f4f7fb;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    .page {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header,
+    .panel {
+      padding: 24px;
+      border: 1px solid #dce3ed;
+      border-radius: 14px;
+      background: white;
+      box-shadow: 0 8px 24px rgba(29, 43, 68, 0.06);
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 26px;
+    }
+
+    h2 {
+      margin-bottom: 18px;
+      font-size: 19px;
+    }
+
+    .eyebrow {
+      margin: 0 0 5px;
+      color: #60708a;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+
+    .message {
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      border-radius: 9px;
+      color: #175a36;
+      background: #e7f7ee;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .section {
+      margin-bottom: 26px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field.full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      color: #344259;
+      font-size: 14px;
+      font-weight: 650;
+    }
+
+    input {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid #bdc8d7;
+      border-radius: 8px;
+      background: white;
+      font: inherit;
+    }
+
+    input:focus {
+      border-color: #1769e0;
+      outline: 3px solid rgba(23, 105, 224, .14);
+    }
+
+    .actions,
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .actions {
+      justify-content: space-between;
+      padding-top: 6px;
+    }
+
+    button,
+    .link-button {
+      min-height: 42px;
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 8px;
+      color: white;
+      background: #1769e0;
+      font: inherit;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .secondary {
+      color: #26364f;
+      background: #e9eef5;
+    }
+
+    .danger {
+      background: #c73535;
+    }
+
+    .empty-note {
+      margin: 0 0 20px;
+      padding: 12px 16px;
+      border-radius: 9px;
+      color: #744d09;
+      background: #fff4d8;
+    }
+
+    @media (max-width: 650px) {
+      body {
+        padding: 14px;
+      }
+
+      header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .field.full {
+        grid-column: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+<div class="page">
+  <header>
+    <div>
+      <p class="eyebrow">
+        <span th:text="${applicationName}">Gate Controller</span>
+        <span aria-hidden="true"> · </span>
+        <span th:text="'v' + ${applicationVersion}">v0.1.0</span>
+      </p>
+      <h1>Configuration</h1>
+    </div>
+    <div class="header-actions">
+      <a class="link-button secondary" th:href="@{/button}">Gate</a>
+      <a class="link-button secondary" th:href="@{/users}">Users</a>
+      <form th:action="@{/logout}" method="post">
+        <button class="secondary" type="submit">Logout</button>
+      </form>
+    </div>
+  </header>
+
+  <div class="message"
+       th:if="${message}"
+       th:text="${message}">
+    Configuration saved successfully
+  </div>
+
+  <main class="panel">
+    <p class="empty-note" th:unless="${configExists}">
+      No configuration exists. Saving this form will create the single
+      configuration record.
+    </p>
+
+    <form th:action="@{/config}"
+          th:object="${config}"
+          method="post">
+      <section class="section">
+        <h2>MQTT</h2>
+        <div class="grid">
+          <div class="field full">
+            <label for="mqttBroker">Broker</label>
+            <input id="mqttBroker"
+                   type="text"
+                   th:field="*{mqttBroker}"
+                   placeholder="tcp://host:1883"
+                   required>
+          </div>
+          <div class="field">
+            <label for="mqttUser">User</label>
+            <input id="mqttUser" type="text" th:field="*{mqttUser}" required>
+          </div>
+          <div class="field">
+            <label for="mqttPassword">Password</label>
+            <input id="mqttPassword"
+                   type="password"
+                   th:field="*{mqttPassword}"
+                   autocomplete="new-password"
+                   required>
+          </div>
+          <div class="field">
+            <label for="mqttClientId">Client ID</label>
+            <input id="mqttClientId" type="text" th:field="*{mqttClientId}" required>
+          </div>
+          <div class="field">
+            <label for="mqttConnectionTimeout">Connection timeout (seconds)</label>
+            <input id="mqttConnectionTimeout"
+                   type="number"
+                   min="1"
+                   th:field="*{mqttConnectionTimeout}"
+                   required>
+          </div>
+          <div class="field">
+            <label for="mqttMessageQos">Message QoS</label>
+            <input id="mqttMessageQos"
+                   type="number"
+                   min="0"
+                   max="2"
+                   th:field="*{mqttMessageQos}"
+                   required>
+          </div>
+          <div class="field">
+            <label for="mqttTopic">Topic</label>
+            <input id="mqttTopic" type="text" th:field="*{mqttTopic}" required>
+          </div>
+          <div class="field full">
+            <label for="mqttPayload">Payload</label>
+            <input id="mqttPayload" type="text" th:field="*{mqttPayload}" required>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Gate location</h2>
+        <div class="grid">
+          <div class="field">
+            <label for="gateLatitude">Latitude</label>
+            <input id="gateLatitude"
+                   type="number"
+                   min="-90"
+                   max="90"
+                   step="any"
+                   th:field="*{gateLatitude}"
+                   required>
+          </div>
+          <div class="field">
+            <label for="gateLongitude">Longitude</label>
+            <input id="gateLongitude"
+                   type="number"
+                   min="-180"
+                   max="180"
+                   step="any"
+                   th:field="*{gateLongitude}"
+                   required>
+          </div>
+          <div class="field">
+            <label for="gateMaxDistanceMeters">Maximum distance (meters)</label>
+            <input id="gateMaxDistanceMeters"
+                   type="number"
+                   min="1"
+                   th:field="*{gateMaxDistanceMeters}"
+                   required>
+          </div>
+        </div>
+      </section>
+
+      <div class="actions">
+        <button type="submit"
+                th:text="${configExists} ? 'Update configuration' : 'Create configuration'">
+          Save configuration
+        </button>
+      </div>
+    </form>
+
+    <form th:if="${configExists}"
+          th:action="@{/config/delete}"
+          method="post"
+          onsubmit="return confirm('Delete the configuration?');">
+      <button class="danger" type="submit">Delete configuration</button>
+    </form>
+  </main>
+</div>
+</body>
+</html>

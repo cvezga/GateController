@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+
+  <!-- Required for cellphone/mobile layouts -->
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title th:text="${pageTitle} ?: 'Gate Controller'">
+    Gate Controller
+  </title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+
+      background:
+              linear-gradient(
+                      rgba(0, 0, 0, 0.55),
+                      rgba(0, 0, 0, 0.75)
+              ),
+              url("/images/garage-background.jpg");
+
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+    }
+
+
+    .app {
+      width: 100%;
+      max-width: 360px;
+      margin: 0;
+      background-color: white;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    header {
+      padding: 16px;
+      border-bottom: 1px solid #e5e5e5;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .authenticated-user {
+      margin-top: 6px;
+      font-size: 14px;
+      color: #555;
+    }
+
+    .application-version {
+      margin-top: 4px;
+      font-size: 13px;
+      color: #777;
+    }
+
+    main {
+      padding: 16px;
+    }
+
+    .card {
+      margin-bottom: 16px;
+      padding: 16px;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      background-color: white;
+    }
+
+    .card h2 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .card p {
+      margin: 0 0 12px;
+      line-height: 1.5;
+      color: #555;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    input,
+    select,
+    textarea,
+    button {
+      width: 100%;
+      min-height: 44px;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      font-size: 16px;
+      border-radius: 8px;
+    }
+
+    input,
+    select,
+    textarea {
+      border: 1px solid #ccc;
+      background-color: white;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    button {
+      border: none;
+      background-color: #1769e0;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:active {
+      opacity: 0.85;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .message {
+      padding: 12px;
+      margin-bottom: 16px;
+      border-radius: 8px;
+      background-color: #e8f4ff;
+      color: #174d7d;
+    }
+
+    .message.error {
+      background-color: #ffe8e8;
+      color: #8a1f1f;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      padding: 0 16px 16px;
+    }
+
+    .actions a,
+    .actions button {
+      flex: 1;
+      min-height: 40px;
+      margin: 0;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      background: white;
+      color: #333;
+      font: bold 14px sans-serif;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .actions form {
+      flex: 1;
+    }
+
+    footer {
+      padding: 16px;
+      border-top: 1px solid #e5e5e5;
+      text-align: center;
+      font-size: 13px;
+      color: #777;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <header>
+    <h1 th:text="${applicationName} ?: 'Gate Controller'">
+      Gate Controller
+    </h1>
+    <div class="authenticated-user">
+      Authenticated user:
+      <strong th:text="${username}">username</strong>
+    </div>
+    <div class="application-version">
+      Version:
+      <strong th:text="${applicationVersion}">0.1.0</strong>
+    </div>
+  </header>
+
+  <main>
+
+    <div class="message"
+         th:if="${message}"
+         th:text="${message}">
+      Operation completed successfully.
+    </div>
+
+    <section class="card">
+      <form id="gate-form"
+            th:action="@{/button}"
+            method="post">
+
+        <input id="latitude" name="latitude" type="hidden">
+        <input id="longitude" name="longitude" type="hidden">
+        <input id="accuracy" name="accuracy" type="hidden">
+
+        <button type="submit">Open / Close</button>
+
+      </form>
+    </section>
+
+  </main>
+
+  <nav class="actions" aria-label="Application">
+    <a th:href="@{/events}">Events</a>
+    <form th:action="@{/logout}" method="post">
+      <button type="submit">Logout</button>
+    </form>
+  </nav>
+
+  <footer>
+    <span th:text="${#dates.year(#dates.createNow())}">2026</span>
+    <span th:text="${applicationName} ?: 'Mobile App'">Mobile App</span>
+  </footer>
+
+</div>
+
+<script>
+  const message = document.querySelector(".message");
+  const form = document.querySelector("#gate-form");
+  const submitButton = form.querySelector("button[type='submit']");
+
+  function clearMessageAfterDelay(messageElement) {
+    submitButton.disabled = true;
+
+    setTimeout(() => {
+      messageElement.remove();
+      submitButton.disabled = false;
+      submitButton.textContent = "Open / Close";
+    }, 5000);
+  }
+
+  if (message) {
+    if (message.textContent.toUpperCase().includes("ERROR")) {
+      message.classList.add("error");
+    }
+
+    clearMessageAfterDelay(message);
+  }
+
+  function showLocationError(text) {
+    let errorMessage = document.querySelector(".message");
+
+    if (!errorMessage) {
+      errorMessage = document.createElement("div");
+      errorMessage.className = "message error";
+      document.querySelector("main").prepend(errorMessage);
+    }
+
+    errorMessage.classList.add("error");
+    errorMessage.textContent = text;
+    clearMessageAfterDelay(errorMessage);
+  }
+
+  form.addEventListener("submit", event => {
+    event.preventDefault();
+    submitButton.disabled = true;
+
+    if (!navigator.geolocation) {
+      showLocationError("GPS location is not supported by this browser.");
+      return;
+    }
+
+    submitButton.textContent = "Getting location...";
+
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        document.querySelector("#latitude").value = position.coords.latitude;
+        document.querySelector("#longitude").value = position.coords.longitude;
+        document.querySelector("#accuracy").value = position.coords.accuracy;
+        form.submit();
+      },
+      () => {
+        showLocationError(
+          "Unable to get your location. Allow location access and try again."
+        );
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  });
+</script>
+
+</body>
+</html>

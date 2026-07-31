@@ -1,0 +1,66 @@
+# HTTPS (self-signed keystore: scripts/generate-dev-ssl.sh)
+server:
+  port: 8081
+  ssl:
+    enabled: false
+    key-store: classpath:ssl/cvezga.tech.cert
+    certificate: classpath:certs/cvezga.tech.cert
+    certificate-private-key: classpath:certs/cvezga.tech.key
+
+spring:
+  application:
+    name: GateController
+
+  datasource:
+    url: jdbc:h2:file:/opt/gatecontroller/data/mydb
+    username: ${DB_USER:sa}
+    password: ${DB_PASSWORD:}
+    driver-class-name: org.h2.Driver
+
+    hikari:
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 30000
+      validation-timeout: 5000
+
+  h2:
+    console:
+      enabled: false
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+logging:
+  level:
+    com.zaxxer.hikari: INFO
+    org.hibernate.engine.jdbc.spi.SqlExceptionHelper: WARN
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  health:
+    show-details: never
+
+mqtt:
+  broker: ${mqtt_broker}
+  user: ${mqtt_user}
+  password:  ${mqtt_pass}
+  clientId: "java-publisher"
+  connectionTimeout: 10
+  messageQos: 1
+  topic: "garage/gate/command"
+  payload: "OPEN"
+
+gate:
+  longitude: -84.083306
+  latitude: 10.074889
+  max_distance_metters: 20
+
+version: 0.1.0
+
