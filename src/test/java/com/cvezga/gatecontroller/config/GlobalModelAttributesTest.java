@@ -11,9 +11,11 @@ class GlobalModelAttributesTest {
 
     @Test
     void exposesConfiguredApplicationMetadata() {
-        GlobalModelAttributes attributes = new GlobalModelAttributes("Gate Controller", "1.2.3");
+        GlobalModelAttributes attributes =
+                new GlobalModelAttributes("Gate Controller", "1.2.3", "GMT-6");
 
         assertThat(attributes.applicationName()).isEqualTo("Gate Controller");
         assertThat(attributes.applicationVersion()).isEqualTo("1.2.3");
+        assertThat(attributes.timezone()).isEqualTo("GMT-6");
     }
 }

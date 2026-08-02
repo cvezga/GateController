@@ -105,6 +105,7 @@ Important defaults:
 - MQTT topic: `garage/gate/command`
 - MQTT payload: `OPEN`
 - Maximum gate distance: `20` meters
+- Event timestamp timezone: `GMT-6`
 
 Update the datasource path in `application.yaml` when `/opt/gatecontroller/data`
 is not writable in the local environment.

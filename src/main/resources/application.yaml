@@ -64,3 +64,5 @@ gate:
 
 version: 0.1.0
 
+# ZoneId used when event timestamps are recorded and displayed.
+timezone: GMT-6

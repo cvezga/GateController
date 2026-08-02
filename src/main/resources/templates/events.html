@@ -145,7 +145,10 @@
 
   <main>
     <div class="summary">
-      <span>Newest events first</span>
+      <span>
+        Newest events first · Timezone:
+        <strong th:text="${timezone}">UTC</strong>
+      </span>
       <strong th:text="${#lists.size(events)} + ' event(s)'">0 event(s)</strong>
     </div>
 
@@ -162,8 +165,8 @@
         <tbody>
         <tr th:each="event : ${events}">
           <td data-label="Date"
-              th:text="${event.dateTime != null ? #temporals.format(event.dateTime, 'yyyy-MM-dd HH:mm:ss') : '—'}">
-            2026-01-01 12:00:00
+              th:text="${event.dateTime != null ? #temporals.format(event.dateTime, 'yyyy-MM-dd hh:mm:ss a') : '—'}">
+            2026-01-01 12:00:00 PM
           </td>
           <td data-label="User" th:text="${event.username}">username</td>
           <td data-label="Type" th:text="${event.type}">button</td>
