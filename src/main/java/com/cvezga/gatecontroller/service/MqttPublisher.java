@@ -7,7 +7,6 @@ import org.eclipse.paho.mqttv5.client.MqttConnectionOptions;
 import org.eclipse.paho.mqttv5.common.MqttException;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
 import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -24,30 +23,13 @@ import java.util.Optional;
 @Service
 public class MqttPublisher {
 
-//    @Value("${mqtt.broker}")
-//    private String broker;
-//    @Value("${mqtt.user}")
-//    private String user;
-//    @Value("${mqtt.password}")
-//    private String password;
-//    @Value("${mqtt.clientId}")
-//    private String clientId;
-//    @Value("${mqtt.connectionTimeout}")
-//    private int connectionTimeout;
-//    @Value("${mqtt.messageQos}")
-//    private int messageQos;
-//    @Value("${mqtt.topic}")
-//    private String topic;
-//    @Value("${mqtt.payload}")
-//    private String payload;
-
     private final ConfigService configService;
 
     public MqttPublisher(ConfigService configService) {
         this.configService = configService;
     }
 
-    public boolean publish() {
+    public boolean publishNotification() {
 
         boolean result = false;
 
@@ -58,30 +40,51 @@ public class MqttPublisher {
             Optional<Config> optionalConfig = configService.find();
 
             if (optionalConfig.isEmpty()) {
-                return false;
+                throw new RuntimeException("No config found");
             }
 
             Config config = optionalConfig.get();
 
+            client = getClient(config);
 
-            client = new MqttAsyncClient(config.getMqttBroker(), config.getMqttClientId());
+            MqttMessage message = getMessage(config);
 
-            MqttConnectionOptions options = new MqttConnectionOptions();
-            options.setUserName(config.getMqttUser());
-            options.setPassword(config.getMqttPassword().getBytes(StandardCharsets.UTF_8));
-            options.setConnectionTimeout(config.getMqttConnectionTimeout());
-            options.setAutomaticReconnect(true);
-            options.setCleanStart(true);
+            client.publish(config.getMqttTopic(), message).waitForCompletion(5000);
 
-            client.connect(options).waitForCompletion(5000);
+            log.info("Message published:");
+            log.info("Topic   : " + config.getMqttTopic());
+            log.info("Payload : " + config.getMqttPayload());
 
-            MqttMessage message = new MqttMessage(config.getMqttPayload().getBytes(StandardCharsets.UTF_8));
-            message.setQos(config.getMqttMessageQos());      // Deliver at least once
-            message.setRetained(false);
+            result = true;
 
-            MqttProperties properties = new MqttProperties();
-            properties.setMessageExpiryInterval(5L);
-            message.setProperties(properties);
+        } catch (Exception e) {
+            log.error("Error sending message to mqtt", e);
+        } finally {
+            close(client);
+        }
+
+        return result;
+
+    }
+    public boolean publishOpenCommand() {
+
+        boolean result = false;
+
+        MqttAsyncClient client = null;
+
+        try {
+
+            Optional<Config> optionalConfig = configService.find();
+
+            if (optionalConfig.isEmpty()) {
+                throw new RuntimeException("No config found");
+            }
+
+            Config config = optionalConfig.get();
+
+            client = getClient(config);
+
+            MqttMessage message = getMessage(config, config.getMqttPayload());
 
             client.publish(config.getMqttTopic(), message).waitForCompletion(5000);
 
@@ -100,6 +103,35 @@ public class MqttPublisher {
         return result;
     }
 
+    private MqttMessage getMessage(Config config, String textMessage){
+
+        MqttProperties properties = new MqttProperties();
+        properties.setMessageExpiryInterval(5L);
+
+        MqttMessage message = new MqttMessage(textMessage.getBytes(StandardCharsets.UTF_8));
+        message.setQos(config.getMqttMessageQos());      // Deliver at least once
+        message.setRetained(false);
+        message.setProperties(properties);
+
+        return message;
+    }
+    private MqttAsyncClient getClient(Config config) throws MqttException {
+
+        MqttAsyncClient client = new MqttAsyncClient(config.getMqttBroker(), config.getMqttClientId());
+
+        MqttConnectionOptions options = new MqttConnectionOptions();
+        options.setUserName(config.getMqttUser());
+        options.setPassword(config.getMqttPassword().getBytes(StandardCharsets.UTF_8));
+        options.setConnectionTimeout(config.getMqttConnectionTimeout());
+        options.setAutomaticReconnect(true);
+        options.setCleanStart(true);
+
+        client.connect(options).waitForCompletion(5000);
+
+        return client;
+
+    }
+
     private void close(MqttAsyncClient client) {
         if (client != null) {
             try {
@@ -116,4 +148,6 @@ public class MqttPublisher {
             }
         }
     }
+
+
 }

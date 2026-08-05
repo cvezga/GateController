@@ -55,6 +55,7 @@ mqtt:
   connectionTimeout: 10
   messageQos: 1
   topic: "garage/gate/command"
+  notificationTopic: "garage/gate/notification"
   payload: "OPEN"
 
 gate:

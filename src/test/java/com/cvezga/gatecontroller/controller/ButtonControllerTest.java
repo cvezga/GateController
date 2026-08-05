@@ -1,8 +1,10 @@
 package com.cvezga.gatecontroller.controller;
 
 import com.cvezga.gatecontroller.entity.Config;
+import com.cvezga.gatecontroller.entity.CommandValidation;
 import com.cvezga.gatecontroller.entity.Event;
 import com.cvezga.gatecontroller.service.ConfigService;
+import com.cvezga.gatecontroller.service.CommandValidationService;
 import com.cvezga.gatecontroller.service.EventService;
 import com.cvezga.gatecontroller.service.MqttPublisher;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +14,7 @@ import org.springframework.ui.ExtendedModelMap;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -26,6 +29,7 @@ class ButtonControllerTest {
     private MqttPublisher publisher;
     private ConfigService configService;
     private EventService eventService;
+    private CommandValidationService commandValidationService;
     private Authentication authentication;
     private ButtonController controller;
 
@@ -34,9 +38,10 @@ class ButtonControllerTest {
         publisher = mock(MqttPublisher.class);
         configService = mock(ConfigService.class);
         eventService = mock(EventService.class);
+        commandValidationService = mock(CommandValidationService.class);
         authentication = mock(Authentication.class);
         when(authentication.getName()).thenReturn("alice");
-        controller = new ButtonController(publisher, configService, eventService);
+        controller = new ButtonController(publisher, configService, eventService, commandValidationService);
     }
 
     @Test
@@ -64,7 +69,7 @@ class ButtonControllerTest {
 
         assertThat(controller.sendCommand(10, -84, 3, authentication, model)).isEqualTo("button");
         assertThat(model).containsEntry("username", "alice").containsEntry("message", "No config found");
-        verify(publisher, never()).publish();
+        verify(publisher, never()).publishOpenCommand();
         verifyEventWasSaved();
     }
 
@@ -76,24 +81,30 @@ class ButtonControllerTest {
         controller.sendCommand(11, -84, 3, authentication, model);
 
         assertThat(model).containsEntry("message", "ERROR: You must be within 10 meters of the gate");
-        verify(publisher, never()).publish();
+        verify(publisher, never()).publishOpenCommand();
     }
 
     @Test
-    void sendCommandReportsSuccessfulPublish() {
-        when(configService.find()).thenReturn(Optional.of(config(10, -84, 10)));
-        when(publisher.publish()).thenReturn(true);
+    void sendCommandOpensConfirmationPageAfterSuccessfulPublish() {
+        Config config = config(10, -84, 10);
+        config.setMqttPayload("OPEN");
+        when(configService.find()).thenReturn(Optional.of(config));
+        when(publisher.publishOpenCommand()).thenReturn(true);
+        CommandValidation validation = new CommandValidation();
+        validation.setId(UUID.randomUUID());
+        when(commandValidationService.saveEvent("alice", "OPEN")).thenReturn(validation);
         ExtendedModelMap model = new ExtendedModelMap();
 
-        controller.sendCommand(10, -84, 3, authentication, model);
+        String view = controller.sendCommand(10, -84, 3, authentication, model);
 
-        assertThat(model).containsEntry("message", "Command published successfully");
+        assertThat(view).isEqualTo("redirect:/command-confirmation/" + validation.getId());
+        verify(commandValidationService).saveEvent("alice", "OPEN");
     }
 
     @Test
     void sendCommandReportsPublishFailure() {
         when(configService.find()).thenReturn(Optional.of(config(10, -84, 10)));
-        when(publisher.publish()).thenReturn(false);
+        when(publisher.publishOpenCommand()).thenReturn(false);
         ExtendedModelMap model = new ExtendedModelMap();
 
         controller.sendCommand(10, -84, 3, authentication, model);

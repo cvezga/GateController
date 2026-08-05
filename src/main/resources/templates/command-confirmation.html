@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Confirm command</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px;
+      font-family: sans-serif;
+      background: linear-gradient(rgba(0,0,0,.55), rgba(0,0,0,.75)), url("/images/garage-background.jpg") center/cover;
+    }
+    .card { width: 100%; max-width: 360px; padding: 24px; border-radius: 12px; background: white; }
+    h1 { margin: 0 0 8px; font-size: 24px; }
+    p { color: #555; }
+    .message { padding: 12px; margin-bottom: 16px; border-radius: 8px; background: #e8f4ff; color: #174d7d; }
+    .message.error { background: #ffe8e8; color: #8a1f1f; }
+    .countdown { margin: 14px 0; text-align: center; color: #555; }
+    .countdown strong { font-size: 24px; color: #1769e0; }
+    .countdown.expiring strong { color: #b42318; }
+    #number {
+      width: 100%; height: 58px; margin: 12px 0 16px; border: 1px solid #bbb; border-radius: 8px;
+      font-size: 32px; letter-spacing: 12px; text-align: center; background: white;
+    }
+    .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    button { min-height: 50px; border: 0; border-radius: 8px; font-size: 20px; cursor: pointer; }
+    .digit { background: #edf3fb; color: #222; }
+    .clear { background: #eee; color: #333; }
+    .confirm { grid-column: 1 / -1; background: #1769e0; color: white; font-weight: bold; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    dialog { width: calc(100% - 48px); max-width: 320px; padding: 24px; border: 0; border-radius: 12px; text-align: center; }
+    dialog::backdrop { background: rgba(0, 0, 0, .7); }
+    dialog h2 { margin-top: 0; }
+    .notification-number { margin: 18px 0; font-size: 52px; font-weight: bold; letter-spacing: 10px; color: #1769e0; }
+    .close-modal { width: 100%; background: #1769e0; color: white; font-weight: bold; }
+  </style>
+</head>
+<body>
+<main class="card">
+  <h1>Confirm command</h1>
+  <p>Enter your two-digit confirmation number.</p>
+
+  <div id="countdown" class="countdown" role="timer" aria-live="polite"
+       th:attr="data-return-url=@{/button}">
+    Time remaining: <strong><span id="seconds-remaining">60</span>s</strong>
+  </div>
+
+  <div class="message" th:if="${message}" th:text="${message}"
+       th:classappend="${#strings.startsWith(message, 'ERROR')} ? ' error'"></div>
+
+  <form id="confirmation-form" th:action="@{/command-confirmation}" method="post">
+    <input type="hidden" name="id" th:value="${commandValidation.id}">
+    <input type="hidden" name="randomInt" th:value="${commandValidation.randomInt}">
+    <input type="hidden" name="user" th:value="${commandValidation.username}">
+
+    <label for="number">Confirmation number</label>
+    <input id="number" name="number" type="text" inputmode="numeric" pattern="[0-9]{2}"
+           minlength="2" maxlength="2" autocomplete="one-time-code" readonly required>
+
+    <div class="keypad" aria-label="Number keypad">
+      <button class="digit" type="button" data-digit="1">1</button>
+      <button class="digit" type="button" data-digit="2">2</button>
+      <button class="digit" type="button" data-digit="3">3</button>
+      <button class="digit" type="button" data-digit="4">4</button>
+      <button class="digit" type="button" data-digit="5">5</button>
+      <button class="digit" type="button" data-digit="6">6</button>
+      <button class="digit" type="button" data-digit="7">7</button>
+      <button class="digit" type="button" data-digit="8">8</button>
+      <button class="digit" type="button" data-digit="9">9</button>
+      <button class="clear" type="button" id="clear">Clear</button>
+      <button class="digit" type="button" data-digit="0">0</button>
+      <button class="clear" type="button" id="backspace" aria-label="Delete last digit">⌫</button>
+      <button class="confirm" type="submit" disabled>Confirm</button>
+    </div>
+  </form>
+</main>
+
+<dialog id="notification-modal" aria-labelledby="notification-title">
+  <h2 id="notification-title">Gate notification</h2>
+  <p>Your confirmation number is:</p>
+  <div id="notification-number" class="notification-number"
+       th:text="${notificationNumber}" th:attr="data-number=${notificationNumber}">07</div>
+  <button id="close-modal" class="close-modal" type="button">Close</button>
+</dialog>
+
+<script>
+  const number = document.querySelector("#number");
+  const confirmButton = document.querySelector(".confirm");
+  const notificationModal = document.querySelector("#notification-modal");
+  const notificationNumber = document.querySelector("#notification-number");
+  const countdown = document.querySelector("#countdown");
+  const secondsRemaining = document.querySelector("#seconds-remaining");
+  let notificationShown = false;
+
+  const expirationTime = Date.now() + 60000;
+  const countdownInterval = setInterval(updateCountdown, 250);
+
+  function updateCountdown() {
+    const remaining = Math.max(0, Math.ceil((expirationTime - Date.now()) / 1000));
+    secondsRemaining.textContent = remaining;
+    countdown.classList.toggle("expiring", remaining <= 10);
+
+    if (remaining === 0) {
+      clearInterval(countdownInterval);
+      window.location.replace(countdown.dataset.returnUrl);
+    }
+  }
+
+  updateCountdown();
+
+  function showNotification(value) {
+    if (!/^[0-9]{2}$/.test(value) || notificationShown) return;
+    notificationShown = true;
+    notificationNumber.textContent = value;
+    notificationModal.showModal();
+  }
+
+  showNotification(notificationNumber.dataset.number || "");
+  document.querySelector("#close-modal").addEventListener("click", () => notificationModal.close());
+
+  const notificationPoll = setInterval(async () => {
+    if (notificationShown) {
+      clearInterval(notificationPoll);
+      return;
+    }
+    try {
+      const response = await fetch("/command-confirmation/notification", {
+        headers: { "Accept": "application/json" }
+      });
+      if (response.ok && response.status !== 204) showNotification((await response.json()).number);
+    } catch (ignored) {
+      // A later poll retries transient connection failures.
+    }
+  }, 1000);
+
+  function refresh() {
+    confirmButton.disabled = number.value.length !== 2;
+  }
+
+  document.querySelectorAll("[data-digit]").forEach(button => {
+    button.addEventListener("click", () => {
+      if (number.value.length < 2) number.value += button.dataset.digit;
+      refresh();
+    });
+  });
+  document.querySelector("#clear").addEventListener("click", () => { number.value = ""; refresh(); });
+  document.querySelector("#backspace").addEventListener("click", () => {
+    number.value = number.value.slice(0, -1);
+    refresh();
+  });
+</script>
+</body>
+</html>

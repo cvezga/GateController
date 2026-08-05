@@ -3,39 +3,40 @@ package com.cvezga.gatecontroller.entity;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 /**
  * Persistent audit event describing an action performed by a user.
  */
 @Entity
-@Table(name = "events")
-public class Event {
+@Table(name = "command_validation")
+public class CommandValidation {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    private LocalDateTime dateTime;
+    private UUID id;
+    private String command;
     private String username;
 
-    private String type;
+    private String ip;
+    private LocalDateTime dateTime;
+    private int randomInt;
+    private int confirmationNumber;
+    private String status;
 
-    private String message;
-
-    public Long getId() {
+    public UUID getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(UUID id) {
         this.id = id;
     }
 
-    public LocalDateTime getDateTime() {
-        return dateTime;
+    public String getCommand() {
+        return command;
     }
 
-    public void setDateTime(LocalDateTime dateTime) {
-        this.dateTime = dateTime;
+    public void setCommand(String command) {
+        this.command = command;
     }
 
     public String getUsername() {
@@ -46,19 +47,44 @@ public class Event {
         this.username = username;
     }
 
-    public String getType() {
-        return type;
+    public LocalDateTime getDateTime() {
+        return dateTime;
     }
 
-    public void setType(String type) {
-        this.type = type;
+    public void setDateTime(LocalDateTime dateTime) {
+        this.dateTime = dateTime;
     }
 
-    public String getMessage() {
-        return message;
+
+    public int getRandomInt() {
+        return randomInt;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public void setRandomInt(int randomInt) {
+        this.randomInt = randomInt;
+    }
+
+    public int getConfirmationNumber() {
+        return confirmationNumber;
+    }
+
+    public void setConfirmationNumber(int confirmationNumber) {
+        this.confirmationNumber = confirmationNumber;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
     }
 }

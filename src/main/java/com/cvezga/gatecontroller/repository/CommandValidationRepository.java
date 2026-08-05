@@ -1,19 +1,12 @@
 package com.cvezga.gatecontroller.repository;
 
-import com.cvezga.gatecontroller.entity.Event;
+import com.cvezga.gatecontroller.entity.CommandValidation;
 import org.springframework.data.repository.CrudRepository;
 
-import java.util.List;
+import java.util.UUID;
 
-/**
- * Provides persistence and reverse-chronological retrieval of audit events.
- */
-public interface EventRepository extends CrudRepository<Event, Long> {
 
-    /**
-     * Retrieves all events with the most recent event first.
-     *
-     * @return events ordered by timestamp in descending order
-     */
-    List<Event> findAllByOrderByDateTimeDesc();
+public interface CommandValidationRepository extends CrudRepository<CommandValidation, UUID> {
+
+
 }
