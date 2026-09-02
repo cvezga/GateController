@@ -54,7 +54,7 @@ public class MqttPublisher {
 
             String command = "OPEN-"+ UUID.randomUUID().toString();
 
-            commandControlSet.add(command);
+            commandControlSet.add(command+"-OK");
 
             MqttMessage message = getMessage(config,command);
 
