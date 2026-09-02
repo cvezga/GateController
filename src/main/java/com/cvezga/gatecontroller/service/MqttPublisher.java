@@ -2,8 +2,7 @@ package com.cvezga.gatecontroller.service;
 
 import com.cvezga.gatecontroller.entity.Config;
 import lombok.extern.slf4j.Slf4j;
-import org.eclipse.paho.mqttv5.client.MqttAsyncClient;
-import org.eclipse.paho.mqttv5.client.MqttConnectionOptions;
+import org.eclipse.paho.mqttv5.client.*;
 import org.eclipse.paho.mqttv5.common.MqttException;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
 import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
@@ -11,6 +10,10 @@ import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 
 /**
  * Publishes the configured gate command to an MQTT broker.
@@ -25,18 +28,20 @@ public class MqttPublisher {
 
     private final ConfigService configService;
 
+    private final Set<String> commandControlSet =  ConcurrentHashMap.newKeySet();
+
     public MqttPublisher(ConfigService configService) {
         this.configService = configService;
     }
 
-    public boolean publishNotification() {
+    public String publishNotification() {
 
-        boolean result = false;
+        String result;
 
         MqttAsyncClient client = null;
 
         try {
-
+            
             Optional<Config> optionalConfig = configService.find();
 
             if (optionalConfig.isEmpty()) {
@@ -47,18 +52,36 @@ public class MqttPublisher {
 
             client = getClient(config);
 
-            MqttMessage message = getMessage(config);
+            String command = "OPEN-"+ UUID.randomUUID().toString();
+
+            commandControlSet.add(command);
+
+            MqttMessage message = getMessage(config,command);
 
             client.publish(config.getMqttTopic(), message).waitForCompletion(5000);
+
+            result = "Command not confirmed!";
+
 
             log.info("Message published:");
             log.info("Topic   : " + config.getMqttTopic());
             log.info("Payload : " + config.getMqttPayload());
 
-            result = true;
+            boolean isCommandConfirmed = false;
+            long start = System.currentTimeMillis();
+            while(System.currentTimeMillis() - start < 5000) {
+                if(!commandControlSet.contains(command)) {
+                    isCommandConfirmed = true;
+                    result = "Command confirmed.";
+                    break;
+                }
+            }
+
+
 
         } catch (Exception e) {
             log.error("Error sending message to mqtt", e);
+            result = "Error sending command";
         } finally {
             close(client);
         }
@@ -126,9 +149,66 @@ public class MqttPublisher {
         options.setAutomaticReconnect(true);
         options.setCleanStart(true);
 
+        setCallbackTopic(config, client);
+
         client.connect(options).waitForCompletion(5000);
 
+        // Subscribe
+        client.subscribe(config.getMqttConfirmationTopic(), 0);
+
+        System.out.println("Subscribed to: " + config.getMqttConfirmationTopic());
+
         return client;
+
+    }
+
+    private void setCallbackTopic(Config config, MqttAsyncClient client) {
+        // Called whenever a message arrives
+        client.setCallback(new MqttCallback() {
+
+            @Override
+            public void disconnected(MqttDisconnectResponse disconnectResponse) {
+                System.err.println("MQTT disconnected: " + disconnectResponse.getReasonString());
+
+            }
+
+            @Override
+            public void mqttErrorOccurred(MqttException exception) {
+                System.err.println("MQTT connection lost");
+                exception.printStackTrace();
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage message) {
+                String payload =
+                        new String(message.getPayload(), StandardCharsets.UTF_8);
+
+                System.out.println("Message received:");
+                System.out.println("Topic: " + topic);
+                System.out.println("QoS: " + message.getQos());
+                System.out.println("Payload: " + payload);
+
+                commandControlSet.remove(payload);
+            }
+
+            @Override
+            public void deliveryComplete(IMqttToken token) {
+                System.out.println("Delivery complete: "+token.isComplete());
+            }
+
+            @Override
+            public void connectComplete(boolean reconnect, String serverURI) {
+                System.out.println("Connected to " + serverURI);
+            }
+
+            @Override
+            public void authPacketArrived(int reasonCode, MqttProperties properties) {
+                System.out.println("Auth packet arrived. reasonCode: "+reasonCode+", properties "+properties);
+            }
+
+
+        });
+
 
     }
 

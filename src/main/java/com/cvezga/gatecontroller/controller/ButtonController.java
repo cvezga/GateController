@@ -116,18 +116,16 @@ public class ButtonController {
                     return "button";
                 }
 
-                boolean publish = mqttPublisher.publishNotification();
+                String response = mqttPublisher.publishNotification();
 
 
-                if (publish) {
+                if (response.equals("Command confirmed.")) {
                     message = "Command published successfully";
                     log.info(message);
-                    CommandValidation commandValidation = commandValidationService.saveEvent(
-                            authentication.getName(), config.getMqttPayload());
-                    return "redirect:/command-confirmation/" + commandValidation.getId();
+                    //CommandValidation commandValidation = commandValidationService.saveEvent(authentication.getName(), config.getMqttPayload());
+                    //return "redirect:/command-confirmation/" + commandValidation.getId();
                 } else {
-                    message = "ERROR: Command NOT SEND!";
-                    log.error(message);
+                    log.error("ERROR: " + response);
                 }
 
             } catch (Exception e) {

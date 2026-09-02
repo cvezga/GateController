@@ -36,15 +36,15 @@ public class CommandConfirmationController {
         this.gateNotificationService = gateNotificationService;
     }
 
-    @GetMapping("/command-confirmation/{id}")
-    public String confirmationPage(@PathVariable UUID id, Authentication authentication, Model model) {
-        CommandValidation commandValidation = findForAuthenticatedUser(id, authentication);
-        model.addAttribute("username", authentication.getName());
-        model.addAttribute("commandValidation", commandValidation);
-        gateNotificationService.consumeForUser(authentication.getName())
-                .ifPresent(number -> model.addAttribute("notificationNumber", number));
-        return "command-confirmation";
-    }
+//    @GetMapping("/command-confirmation/{id}")
+//    public String confirmationPage(@PathVariable UUID id, Authentication authentication, Model model) {
+//        CommandValidation commandValidation = findForAuthenticatedUser(id, authentication);
+//        model.addAttribute("username", authentication.getName());
+//        model.addAttribute("commandValidation", commandValidation);
+//        gateNotificationService.consumeForUser(authentication.getName())
+//                .ifPresent(number -> model.addAttribute("notificationNumber", number));
+//        return "command-confirmation";
+//    }
 
     @ResponseBody
     @GetMapping("/command-confirmation/notification")

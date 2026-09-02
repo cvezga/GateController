@@ -44,8 +44,8 @@ public class SecurityConfig {
     private int messageQos;
     @Value("${mqtt.topic}")
     private String topic;
-    @Value("${mqtt.notificationTopic}")
-    private String notificationTopic;
+    @Value("${mqtt.confirmationTopic}")
+    private String confirmationTopic;
 
     @Value("${mqtt.payload}")
     private String payload;
@@ -130,7 +130,7 @@ public class SecurityConfig {
             config.setMqttConnectionTimeout(connectionTimeout);
             config.setMqttMessageQos(messageQos);
             config.setMqttTopic(topic);
-            config.setMqttNotificationTopic(notificationTopic);
+            config.setMqttConfirmationTopic(confirmationTopic);
             config.setMqttPayload(payload);
             config.setGateLongitude(longitude);
             config.setGateLatitude(latitude);

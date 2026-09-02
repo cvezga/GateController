@@ -31,8 +31,8 @@ public class Config {
     private int mqttMessageQos; // 1
     @Column(name = "mqtt_topic", nullable = false)
     private String mqttTopic; // "garage/gate/command"
-    @Column(name = "mqtt_notification_topic", nullable = false)
-    private String mqttNotificationTopic; // "garage/gate/notification"
+    @Column(name = "mqtt_confirmation_topic", nullable = false)
+    private String mqttConfirmationTopic; // "garage/gate/command"
     @Column(name = "mqtt_payload", nullable = false)
     private String mqttPayload; // "OPEN"
     @Column(name = "gate_longitude", nullable = false)
@@ -106,14 +106,6 @@ public class Config {
         this.mqttTopic = mqttTopic;
     }
 
-    public String getMqttNotificationTopic() {
-        return mqttNotificationTopic;
-    }
-
-    public void setMqttNotificationTopic(String mqttNotificationTopic) {
-        this.mqttNotificationTopic = mqttNotificationTopic;
-    }
-
     public String getMqttPayload() {
         return mqttPayload;
     }
@@ -146,4 +138,12 @@ public class Config {
         this.gateMaxDistanceMeters = gateMaxDistanceMeters;
     }
 
+
+    public String getMqttConfirmationTopic() {
+        return mqttConfirmationTopic;
+    }
+
+    public void setMqttConfirmationTopic(String mqttConfirmationTopic) {
+        this.mqttConfirmationTopic = mqttConfirmationTopic;
+    }
 }
