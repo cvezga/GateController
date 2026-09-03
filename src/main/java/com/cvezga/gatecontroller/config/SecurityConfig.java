@@ -44,6 +44,9 @@ public class SecurityConfig {
     private int messageQos;
     @Value("${mqtt.topic}")
     private String topic;
+    @Value("${mqtt.confirmationTopic}")
+    private String confirmationTopic;
+
     @Value("${mqtt.payload}")
     private String payload;
 
@@ -65,6 +68,7 @@ public class SecurityConfig {
                         .requestMatchers("/config", "/config/**").hasRole("ADMIN")
                         .requestMatchers("/button", "/button/**").hasAnyRole("ADMIN", "USER")
                         .requestMatchers("/events", "/events/**").hasAnyRole("ADMIN", "USER")
+                        .requestMatchers("/command-confirmation", "/command-confirmation/**").hasAnyRole("ADMIN", "USER")
                         .requestMatchers("/", "/login", "/images/**", "/error").permitAll()
                         .anyRequest().authenticated()
                 )
@@ -126,6 +130,7 @@ public class SecurityConfig {
             config.setMqttConnectionTimeout(connectionTimeout);
             config.setMqttMessageQos(messageQos);
             config.setMqttTopic(topic);
+            config.setMqttConfirmationTopic(confirmationTopic);
             config.setMqttPayload(payload);
             config.setGateLongitude(longitude);
             config.setGateLatitude(latitude);

@@ -31,6 +31,8 @@ public class Config {
     private int mqttMessageQos; // 1
     @Column(name = "mqtt_topic", nullable = false)
     private String mqttTopic; // "garage/gate/command"
+    @Column(name = "mqtt_confirmation_topic", nullable = false)
+    private String mqttConfirmationTopic; // "garage/gate/command"
     @Column(name = "mqtt_payload", nullable = false)
     private String mqttPayload; // "OPEN"
     @Column(name = "gate_longitude", nullable = false)
@@ -134,5 +136,14 @@ public class Config {
 
     public void setGateMaxDistanceMeters(int gateMaxDistanceMeters) {
         this.gateMaxDistanceMeters = gateMaxDistanceMeters;
+    }
+
+
+    public String getMqttConfirmationTopic() {
+        return mqttConfirmationTopic;
+    }
+
+    public void setMqttConfirmationTopic(String mqttConfirmationTopic) {
+        this.mqttConfirmationTopic = mqttConfirmationTopic;
     }
 }

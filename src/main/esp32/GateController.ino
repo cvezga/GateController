@@ -2,6 +2,8 @@
 #include <PubSubClient.h>
 
 #define RELAY_PIN 27
+#define RELAY_ON LOW
+#define RELAY_OFF HIGH
 
 
 const char* ssid = "*****";
@@ -9,7 +11,10 @@ const char* password = "*****";
 
 const char* mqttServer = "*****";   // Broker IP
 const int mqttPort = 1883;
-const char* commandTopic = "*****";
+const char* commandTopic = "garage/gate/command";
+const char* confirmationTopic = "garage/gate/confiormation";
+const char* user = "user";
+const char* password = "password";
 
 WiFiClient wifiClient;
 PubSubClient mqtt(wifiClient);
@@ -22,11 +27,11 @@ void setup() {
     connectWifi();
     mqtt.setServer(mqttServer, mqttPort);
     mqtt.setCallback(mqttCallback);
+    mqtt.setBufferSize(512);
+
     connectMqtt();
 
-
-    Serial.println();
-    Serial.println("ESP32 Relay Test Starting...");
+    Serial.println("ESP32 Gate Controller Started");
 
     pinMode(RELAY_PIN, OUTPUT);
     digitalWrite(RELAY_PIN, LOW);
@@ -47,7 +52,7 @@ void loop() {
         connectMqtt();
     }
 
-    // Required for receiving MQTT messages
+        // Required for receiving MQTT messages
     mqtt.loop();
 
 
@@ -83,7 +88,7 @@ void connectMqtt() {
         String clientId = "ESP32-Gate-";
         clientId += String((uint32_t)ESP.getEfuseMac(), HEX);
 
-        if (mqtt.connect(clientId.c_str(),"*****","*****")) {
+        if (mqtt.connect(clientId.c_str(),user,password)) {
             Serial.println("connected");
 
             bool subscribed = mqtt.subscribe(commandTopic);
@@ -124,14 +129,34 @@ void mqttCallback(char* topic, byte* payload, unsigned int length) {
 
     message.trim();
 
-    if (message == "OPEN") {
+    String confirmationMessage;
+
+    if (message.startsWith("OPEN-")) {
         Serial.println("Opening gate...");
         // digitalWrite(RELAY_PIN, HIGH);
         activateRelay();
-    } else if (message == "CLOSE") {
+        confirmationMessage = message + "-OK";
+    } else if (message.startsWith("OPEN-")) {
         Serial.println("Closing gate...");
         // digitalWrite(RELAY_PIN, LOW);
+        confirmationMessage = message + "-Not suported";
     } else {
         Serial.println("Unknown command");
+        confirmationMessage = message + "-Unknown command";
+    }
+
+    // Send confirmation
+    if (mqtt.connected()) {
+
+        bool published = mqtt.publish(
+            confirmationTopic,
+            confirmationMessage.c_str()
+        );
+
+        Serial.print("Confirmation: ");
+        Serial.println(confirmationMessage);
+
+        Serial.print("Publish: ");
+        Serial.println(published ? "successful" : "failed");
     }
 }

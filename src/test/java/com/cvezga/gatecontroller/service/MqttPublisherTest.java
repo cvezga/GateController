@@ -17,7 +17,7 @@ class MqttPublisherTest {
         ConfigService configService = mock(ConfigService.class);
         when(configService.find()).thenReturn(Optional.empty());
 
-        assertThat(new MqttPublisher(configService).publish()).isFalse();
+        assertThat(new MqttPublisher(configService).publishOpenCommand()).isFalse();
         verify(configService).find();
     }
 
@@ -26,6 +26,6 @@ class MqttPublisherTest {
         ConfigService configService = mock(ConfigService.class);
         when(configService.find()).thenThrow(new IllegalStateException("database unavailable"));
 
-        assertThat(new MqttPublisher(configService).publish()).isFalse();
+        assertThat(new MqttPublisher(configService).publishOpenCommand()).isFalse();
     }
 }

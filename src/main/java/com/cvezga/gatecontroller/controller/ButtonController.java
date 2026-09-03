@@ -2,9 +2,12 @@ package com.cvezga.gatecontroller.controller;
 
 
 import com.cvezga.gatecontroller.entity.Config;
+import com.cvezga.gatecontroller.entity.CommandValidation;
+import com.cvezga.gatecontroller.service.CommandValidationService;
 import com.cvezga.gatecontroller.service.ConfigService;
 import com.cvezga.gatecontroller.service.EventService;
 import com.cvezga.gatecontroller.service.MqttPublisher;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -14,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.net.http.HttpRequest;
 import java.util.Optional;
 
 /**
@@ -34,11 +38,17 @@ public class ButtonController {
     private final ConfigService configService;
 
     private final EventService eventService;
+    private final CommandValidationService commandValidationService;
 
-    public ButtonController(MqttPublisher mqttPublisher, ConfigService configService, EventService eventService) {
+    public ButtonController(
+            MqttPublisher mqttPublisher,
+            ConfigService configService,
+            EventService eventService,
+            CommandValidationService commandValidationService) {
         this.mqttPublisher = mqttPublisher;
         this.configService = configService;
         this.eventService = eventService;
+        this.commandValidationService = commandValidationService;
     }
 
     @GetMapping("/button")
@@ -60,16 +70,24 @@ public class ButtonController {
             @RequestParam double longitude,
             @RequestParam double accuracy,
             Authentication authentication,
+            HttpServletRequest request,
             Model model) {
 
-        model.addAttribute("username", authentication.getName());
-        log.info("Command requested by user={}", authentication.getName());
 
-        eventService.saveEvent(authentication.getName(), "button",
-                String.format("sendCommand from latitude=%s, longitude=%s (accuracy=%s meters)",
+        model.addAttribute("username", authentication.getName());
+
+        String remoteAddr = request.getRemoteAddr();
+
+        String logMessage = String.format("sendCommand from user=%s, ip=%s, latitude=%s, longitude=%s (accuracy=%s meters)",
+                authentication.getName(),
+                remoteAddr,
                 latitude,
                 longitude,
-                accuracy));
+                accuracy);
+
+        log.info("/button {}", logMessage);
+
+        eventService.saveEvent(authentication.getName(), "button", logMessage);
 
         String message = "Unknown";
 
@@ -77,20 +95,12 @@ public class ButtonController {
         {
             try {
 
-                log.info(
-                        "sendCommand from latitude={}, longitude={} (accuracy={} meters)",
-                        latitude,
-                        longitude,
-                        accuracy
-                );
-
                 Optional<Config> optionalConfig = configService.find();
                 if (optionalConfig.isEmpty()) {
                     message = "No config found";
                     break code;
                 }
                 Config config = optionalConfig.get();
-
 
                 double distance = calculateDistanceMeters(
                         latitude,
@@ -106,16 +116,16 @@ public class ButtonController {
                     return "button";
                 }
 
-                boolean publish = mqttPublisher.publish();
+                String response = mqttPublisher.publishNotification();
 
 
-                if (publish) {
+                if (response.equals("Command confirmed.")) {
                     message = "Command published successfully";
                     log.info(message);
-                    model.addAttribute("message", message);
+                    //CommandValidation commandValidation = commandValidationService.saveEvent(authentication.getName(), config.getMqttPayload());
+                    //return "redirect:/command-confirmation/" + commandValidation.getId();
                 } else {
-                    message = "ERROR: Command NOT SEND!";
-                    log.error(message);
+                    log.error("ERROR: " + response);
                 }
 
             } catch (Exception e) {

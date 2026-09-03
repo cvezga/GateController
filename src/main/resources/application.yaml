@@ -55,12 +55,13 @@ mqtt:
   connectionTimeout: 10
   messageQos: 1
   topic: "garage/gate/command"
+  confirmationTopic: "garage/gate/confirmation"
   payload: "OPEN"
 
 gate:
   longitude: -84.083306
   latitude: 10.074889
-  max_distance_metters: 20
+  max_distance_metters: 50
 
 version: 0.1.0
 
